@@ -15,6 +15,7 @@ const SuggestImprovementsInputSchema = z.object({
   text: z
     .string()
     .describe('The text to be improved.'),
+  language: z.string().describe('The language for the suggestions. Can be "sv", "bs", "hr", or "sr".'),
 });
 export type SuggestImprovementsInput = z.infer<typeof SuggestImprovementsInputSchema>;
 
@@ -36,6 +37,8 @@ const prompt = ai.definePrompt({
   prompt: `You are an AI writing coach that helps middle schoolers improve their writing.
 
   Given the following text, provide a list of suggestions on how to improve the text. Focus on grammar, sentence structure, clarity, and adding details.  The suggestions should be actionable.  Respond in the first person.
+
+  The suggestions must be in the following language: {{{language}}}.
 
   Text: {{{text}}}
   `,

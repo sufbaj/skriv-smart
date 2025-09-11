@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,7 @@ export default function Home() {
   const [factCheckResult, setFactCheckResult] = useState<VerifySourceFactsOutput | null>(null);
   const [generatedIntro, setGeneratedIntro] = useState<GenerateTextFromPromptOutput | null>(null);
   const [ideaPrompt, setIdeaPrompt] = useState('');
+  const [language, setLanguage] = useState('sv');
   
   const handleAiCall = async <T,>(
     loaderKey: string,
@@ -57,8 +58,10 @@ export default function Home() {
     errorMessage: string
   ) => {
     setIsLoading(loaderKey);
-    setAnalysisResult(null);
-    setSuggestions(null);
+    if (loaderKey !== 'analyze') {
+      setAnalysisResult(null);
+      setSuggestions(null);
+    }
     setBrainstormIdeas(null);
     setFactCheckResult(null);
     setGeneratedIntro(null);
@@ -78,7 +81,7 @@ export default function Home() {
     }
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (lang: string = language) => {
     if (!text) {
       toast({
         variant: 'destructive',
@@ -90,16 +93,18 @@ export default function Home() {
 
     await handleAiCall(
       'analyze',
-      () => suggestImprovements({ text }),
+      () => suggestImprovements({ text, language: lang }),
       (result) => {
         setSuggestions(result.suggestions);
-        setAnalysisResult({
-          score: Math.floor(80 + Math.random() * 15),
-          grammar: 'Bra jobbat! Några småfel hittades.',
-          tone: 'Texten har en nyfiken och glad ton.',
-          structure: 'Tydlig början, mitten och slut.',
-          topic: 'Du håller dig väl till ämnet.',
-        });
+        if (!analysisResult) {
+          setAnalysisResult({
+            score: Math.floor(80 + Math.random() * 15),
+            grammar: 'Bra jobbat! Några småfel hittades.',
+            tone: 'Texten har en nyfiken och glad ton.',
+            structure: 'Tydlig början, mitten och slut.',
+            topic: 'Du håller dig väl till ämnet.',
+          });
+        }
         toast({
           title: 'Analys klar!',
           description: 'Se resultaten i panelen till höger.',
@@ -108,6 +113,12 @@ export default function Home() {
       'Kunde inte hämta förslag.'
     );
   };
+  
+  useEffect(() => {
+    if (analysisResult) {
+      handleAnalyze(language);
+    }
+  }, [language]);
 
   const handleBrainstorm = () => {
     if (!text) {
@@ -251,7 +262,7 @@ export default function Home() {
               />
             </CardContent>
           </Card>
-          <Button onClick={handleAnalyze} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base" disabled={isLoading !== null}>
+          <Button onClick={() => handleAnalyze(language)} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base" disabled={isLoading !== null}>
             {isLoading === 'analyze' ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
             Analysera text
           </Button>
@@ -286,6 +297,12 @@ export default function Home() {
                       <AccordionItem value="suggestions">
                         <AccordionTrigger>Förslag på förbättringar</AccordionTrigger>
                         <AccordionContent>
+                          <div className="flex gap-2 mb-4">
+                              <Button size="sm" variant={language === 'sv' ? 'default' : 'outline'} onClick={() => setLanguage('sv')}>Svenska</Button>
+                              <Button size="sm" variant={language === 'bs' ? 'default' : 'outline'} onClick={() => setLanguage('bs')}>Bosanski</Button>
+                              <Button size="sm" variant={language === 'hr' ? 'default' : 'outline'} onClick={() => setLanguage('hr')}>Hrvatski</Button>
+                              <Button size="sm" variant={language === 'sr' ? 'default' : 'outline'} onClick={() => setLanguage('sr')}>Srpski</Button>
+                          </div>
                           {suggestions?.length ? (
                             <ul className="space-y-3">
                               {suggestions.map((s, i) => (
