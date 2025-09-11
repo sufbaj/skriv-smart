@@ -43,6 +43,10 @@ import { Progress } from '@/components/ui/progress';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import jsPDF from 'jspdf';
 import { saveAs } from 'file-saver';
+import * as mammoth from 'mammoth';
+import * as pdfjs from 'pdfjs-dist';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 
 type AnalysisResult = {
@@ -354,24 +358,53 @@ export default function Home() {
 
   const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      if (file.type === 'text/plain') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setText(e.target?.result as string);
-          toast({ title: 'Filen har laddats upp!' });
-        };
-        reader.readAsText(file);
-      } else {
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      try {
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        let extractedText = '';
+
+        if (file.type === 'text/plain') {
+          extractedText = new TextDecoder().decode(arrayBuffer);
+        } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          extractedText = result.value;
+        } else if (file.type === 'application/pdf') {
+          const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+          let pdfText = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            pdfText += textContent.items.map(item => (item as any).str).join(' ');
+          }
+          extractedText = pdfText;
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Filtypen stöds inte',
+            description: 'Vänligen ladda upp en .txt, .docx, eller .pdf fil.',
+          });
+          return;
+        }
+        setText(extractedText);
+        toast({ title: 'Filen har laddats upp och texten har extraherats!' });
+      } catch (error) {
+        console.error("Error processing file:", error);
         toast({
           variant: 'destructive',
-          title: 'Fel filtyp',
-          description: 'Just nu stöds endast .txt-filer för uppladdning.',
+          title: 'Fel vid filbehandling',
+          description: 'Kunde inte läsa innehållet i filen.',
         });
       }
-    }
-    event.target.value = '';
+    };
+    
+    reader.readAsArrayBuffer(file);
+    event.target.value = ''; // Reset file input
   };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
@@ -398,7 +431,7 @@ export default function Home() {
                       <Upload className="mr-2 h-4 w-4" /> Ladda upp
                     </Label>
                   </Button>
-                  <Input id="upload-file" type="file" className="hidden" onChange={handleUpload} accept=".txt" />
+                  <Input id="upload-file" type="file" className="hidden" onChange={handleUpload} accept=".txt,.docx,.pdf" />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" disabled={!text}>
@@ -418,7 +451,7 @@ export default function Home() {
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
               <Textarea
-                placeholder="Börja skriva din text här..."
+                placeholder="Börja skriva din text här, eller ladda upp en fil..."
                 className="flex-1 w-full text-base rounded-md p-4 bg-background focus-visible:ring-primary"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
