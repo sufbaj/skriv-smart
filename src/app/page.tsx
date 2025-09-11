@@ -23,12 +23,15 @@ import {
   Upload,
   Download,
   ChevronDown,
+  PenSquare,
 } from 'lucide-react';
 import { suggestImprovements, type SuggestImprovementsOutput } from '@/ai/flows/suggest-improvements';
 import { generateCreativeBrainstorm, type CreativeBrainstormOutput } from '@/ai/flows/creative-brainstorming';
 import { verifySourceFacts, type VerifySourceFactsOutput } from '@/ai/flows/verify-source-facts';
 import { rewriteText, type RewriteTextOutput } from '@/ai/flows/rewrite-text';
 import { generateTextFromPrompt, type GenerateTextFromPromptOutput } from '@/ai/flows/generate-text-from-prompt';
+import { continueWriting, type ContinueWritingOutput } from '@/ai/flows/continue-writing';
+
 
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -75,7 +78,9 @@ export default function Home() {
     }
     setBrainstormIdeas(null);
     setFactCheckResult(null);
-    setGeneratedIntro(null);
+    if (loaderKey !== 'continue' && loaderKey !== 'intro') {
+      setGeneratedIntro(null);
+    }
 
     try {
       const result = await aiFunction();
@@ -183,6 +188,26 @@ export default function Home() {
         toast({ title: 'Inledning skapad och infogad!' });
       },
       'Kunde inte generera inledning.'
+    );
+  };
+
+  const handleContinueWriting = () => {
+    if (!text) {
+      toast({
+        variant: 'destructive',
+        title: 'Text saknas',
+        description: 'Det finns ingen text att fortsätta på.',
+      });
+      return;
+    }
+    handleAiCall(
+      'continue',
+      () => continueWriting({ text }),
+      (result) => {
+        setText(prev => `${prev}\n\n${result.continuation}`);
+        toast({ title: 'Berättelsen har fortsatt!' });
+      },
+      'Kunde inte fortsätta skriva.'
     );
   };
   
@@ -441,9 +466,14 @@ export default function Home() {
                   <h4 className="font-semibold">Idégenerator</h4>
                   <p className="text-sm text-muted-foreground">Har du idétorka? Skriv en kort idé så hjälper AI:n dig att starta.</p>
                   <Input placeholder="t.ex. En drake som älskar glass" value={ideaPrompt} onChange={e => setIdeaPrompt(e.target.value)} />
-                  <Button onClick={handleGenerateIntro} disabled={isLoading === 'intro' || !ideaPrompt} className="w-full">
-                    {isLoading === 'intro' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Skapa inledning
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button onClick={handleGenerateIntro} disabled={isLoading === 'intro' || !ideaPrompt} className="flex-1">
+                      {isLoading === 'intro' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />} Skapa inledning
+                    </Button>
+                    <Button onClick={handleContinueWriting} disabled={isLoading === 'continue' || !text} className="flex-1" variant="secondary">
+                       {isLoading === 'continue' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PenSquare className="mr-2 h-4 w-4" />} Fortsätt skriva
+                    </Button>
+                  </div>
                   {generatedIntro && <p className="mt-2 text-sm p-3 bg-muted rounded-md animate-in fade-in-50">{generatedIntro.generatedText}</p>}
                 </div>
 
