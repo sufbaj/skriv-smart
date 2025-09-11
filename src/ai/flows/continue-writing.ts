@@ -16,6 +16,7 @@ const ContinueWritingInputSchema = z.object({
   text: z
     .string()
     .describe('The existing text of the story to continue from.'),
+  language: z.string().describe('The language for the story continuation. Can be "sv", "bs", "hr", or "sr".'),
 });
 export type ContinueWritingInput = z.infer<typeof ContinueWritingInputSchema>;
 
@@ -37,6 +38,8 @@ const continueWritingPrompt = ai.definePrompt({
   input: {schema: ContinueWritingInputSchema},
   output: {schema: ContinueWritingOutputSchema},
   prompt: `You are a creative writing assistant. Your task is to continue the story based on the text provided. Write one or two engaging paragraphs that logically follow the story.
+
+  The story must be in the following language: {{{language}}}.
 
   Existing story:
   {{{text}}}

@@ -63,7 +63,8 @@ export default function Home() {
   const [factCheckResult, setFactCheckResult] = useState<VerifySourceFactsOutput | null>(null);
   const [generatedIntro, setGeneratedIntro] = useState<GenerateTextFromPromptOutput | null>(null);
   const [ideaPrompt, setIdeaPrompt] = useState('');
-  const [language, setLanguage] = useState('sv');
+  const [suggestionLanguage, setSuggestionLanguage] = useState('sv');
+  const [textLanguage, setTextLanguage] = useState('sv');
   
   const handleAiCall = async <T,>(
     loaderKey: string,
@@ -97,7 +98,7 @@ export default function Home() {
     }
   };
 
-  const handleAnalyze = async (lang: string = language) => {
+  const handleAnalyze = async (lang: string = suggestionLanguage) => {
     if (!text) {
       toast({
         variant: 'destructive',
@@ -132,9 +133,9 @@ export default function Home() {
   
   useEffect(() => {
     if (analysisResult) {
-      handleAnalyze(language);
+      handleAnalyze(suggestionLanguage);
     }
-  }, [language]);
+  }, [suggestionLanguage]);
 
   const handleBrainstorm = () => {
     if (!text) {
@@ -181,7 +182,7 @@ export default function Home() {
     }
     handleAiCall(
       'intro',
-      () => generateTextFromPrompt({ prompt: ideaPrompt }),
+      () => generateTextFromPrompt({ prompt: ideaPrompt, language: textLanguage }),
       (result) => {
         setGeneratedIntro(result);
         setText(prev => `${result.generatedText}\n\n${prev}`);
@@ -202,7 +203,7 @@ export default function Home() {
     }
     handleAiCall(
       'continue',
-      () => continueWriting({ text }),
+      () => continueWriting({ text, language: textLanguage }),
       (result) => {
         setText(prev => `${prev}\n\n${result.continuation}`);
         toast({ title: 'Berättelsen har fortsatt!' });
@@ -391,7 +392,7 @@ export default function Home() {
               />
             </CardContent>
           </Card>
-          <Button onClick={() => handleAnalyze(language)} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base" disabled={isLoading !== null}>
+          <Button onClick={() => handleAnalyze(suggestionLanguage)} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base" disabled={isLoading !== null}>
             {isLoading === 'analyze' ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
             Analysera text
           </Button>
@@ -427,10 +428,10 @@ export default function Home() {
                         <AccordionTrigger>Förslag på förbättringar</AccordionTrigger>
                         <AccordionContent>
                           <div className="flex gap-2 mb-4">
-                              <Button size="sm" variant={language === 'sv' ? 'default' : 'outline'} onClick={() => setLanguage('sv')}>Svenska</Button>
-                              <Button size="sm" variant={language === 'bs' ? 'default' : 'outline'} onClick={() => setLanguage('bs')}>Bosanski</Button>
-                              <Button size="sm" variant={language === 'hr' ? 'default' : 'outline'} onClick={() => setLanguage('hr')}>Hrvatski</Button>
-                              <Button size="sm" variant={language === 'sr' ? 'default' : 'outline'} onClick={() => setLanguage('sr')}>Srpski</Button>
+                              <Button size="sm" variant={suggestionLanguage === 'sv' ? 'default' : 'outline'} onClick={() => setSuggestionLanguage('sv')}>Svenska</Button>
+                              <Button size="sm" variant={suggestionLanguage === 'bs' ? 'default' : 'outline'} onClick={() => setSuggestionLanguage('bs')}>Bosanski</Button>
+                              <Button size="sm" variant={suggestionLanguage === 'hr' ? 'default' : 'outline'} onClick={() => setSuggestionLanguage('hr')}>Hrvatski</Button>
+                              <Button size="sm" variant={suggestionLanguage === 'sr' ? 'default' : 'outline'} onClick={() => setSuggestionLanguage('sr')}>Srpski</Button>
                           </div>
                           {suggestions?.length ? (
                             <ul className="space-y-3">
@@ -466,6 +467,15 @@ export default function Home() {
                   <h4 className="font-semibold">Idégenerator</h4>
                   <p className="text-sm text-muted-foreground">Har du idétorka? Skriv en kort idé så hjälper AI:n dig att starta.</p>
                   <Input placeholder="t.ex. En drake som älskar glass" value={ideaPrompt} onChange={e => setIdeaPrompt(e.target.value)} />
+                   <div className="space-y-2">
+                    <Label className="text-sm font-medium">Språk för genererad text</Label>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant={textLanguage === 'sv' ? 'default' : 'outline'} onClick={() => setTextLanguage('sv')}>Svenska</Button>
+                      <Button size="sm" variant={textLanguage === 'bs' ? 'default' : 'outline'} onClick={() => setTextLanguage('bs')}>Bosanski</Button>
+                      <Button size="sm" variant={textLanguage === 'hr' ? 'default' : 'outline'} onClick={() => setTextLanguage('hr')}>Hrvatski</Button>
+                      <Button size="sm" variant={textLanguage === 'sr' ? 'default' : 'outline'} onClick={() => setTextLanguage('sr')}>Srpski</Button>
+                    </div>
+                  </div>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button onClick={handleGenerateIntro} disabled={isLoading === 'intro' || !ideaPrompt} className="flex-1">
                       {isLoading === 'intro' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />} Skapa inledning

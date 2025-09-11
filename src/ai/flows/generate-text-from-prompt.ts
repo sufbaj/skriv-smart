@@ -12,6 +12,7 @@ import {z} from 'genkit';
 
 const GenerateTextFromPromptInputSchema = z.object({
   prompt: z.string().describe('A short idea to generate an introductory paragraph from.'),
+  language: z.string().describe('The language for the generated text. Can be "sv", "bs", "hr", or "sr".'),
 });
 export type GenerateTextFromPromptInput = z.infer<typeof GenerateTextFromPromptInputSchema>;
 
@@ -30,7 +31,9 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateTextFromPromptOutputSchema},
   prompt: `You are a creative writing assistant helping students write stories.
 
-  Generate an engaging introductory paragraph based on the following idea: {{{prompt}}}.`,
+  Generate an engaging introductory paragraph based on the following idea: {{{prompt}}}.
+  
+  The generated text must be in the following language: {{{language}}}.`,
 });
 
 const generateTextFromPromptFlow = ai.defineFlow(
