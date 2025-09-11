@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Lightbulb,
   Sparkles,
@@ -16,6 +22,7 @@ import {
   ThumbsDown,
   Upload,
   Download,
+  ChevronDown,
 } from 'lucide-react';
 import { suggestImprovements, type SuggestImprovementsOutput } from '@/ai/flows/suggest-improvements';
 import { generateCreativeBrainstorm, type CreativeBrainstormOutput } from '@/ai/flows/creative-brainstorming';
@@ -28,6 +35,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
+import jsPDF from 'jspdf';
+import { saveAs } from 'file-saver';
+
 
 type AnalysisResult = {
   score: number;
@@ -188,17 +199,99 @@ export default function Home() {
     );
   };
 
-  const handleDownload = () => {
+  const downloadTxt = () => {
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'skrivsmart_dokument.txt';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    saveAs(blob, 'skrivsmart_dokument.txt');
     toast({ title: 'Texten har laddats ner som .txt' });
   };
   
+  const downloadDocx = () => {
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({
+            children: [new TextRun(text)],
+          }),
+          ...(suggestions || []).map(suggestion => 
+            new Paragraph({
+              children: [
+                new TextRun({ text: '\nKommentar: ', bold: true }),
+                new TextRun(suggestion)
+              ],
+              style: "CommentText"
+            })
+          ),
+        ],
+      }],
+      styles: {
+        paragraphStyles: [
+          {
+            id: "CommentText",
+            name: "Comment Text",
+            basedOn: "Normal",
+            next: "Normal",
+            run: {
+              color: "808080",
+              size: 20, // 10pt
+            },
+          },
+        ]
+      }
+    });
+
+    Packer.toBlob(doc).then(blob => {
+      saveAs(blob, 'skrivsmart_dokument.docx');
+      toast({ title: 'Dokumentet har laddats ner som .docx' });
+    });
+  };
+
+  const downloadPdf = () => {
+    const doc = new jsPDF();
+    
+    const margin = 15;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const usableWidth = pageWidth - margin * 2;
+    const usableHeight = pageHeight - margin * 2;
+    
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(12);
+
+    const mainTextLines = doc.splitTextToSize(text, usableWidth);
+    
+    doc.text(mainTextLines, margin, margin);
+    let y = margin + (mainTextLines.length * doc.getLineHeight() / doc.internal.scaleFactor);
+
+    if (suggestions && suggestions.length > 0) {
+      if (y > usableHeight - 20) {
+        doc.addPage();
+        y = margin;
+      }
+      y += 10;
+      doc.setFont('Helvetica', 'bold');
+      doc.text("Kommentarer:", margin, y);
+      y += doc.getLineHeight() / doc.internal.scaleFactor;
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(128, 128, 128);
+
+      suggestions.forEach(suggestion => {
+        const suggestionLines = doc.splitTextToSize(`- ${suggestion}`, usableWidth);
+        if (y + (suggestionLines.length * doc.getLineHeight() / doc.internal.scaleFactor) > usableHeight) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(suggestionLines, margin, y);
+        y += suggestionLines.length * doc.getLineHeight() / doc.internal.scaleFactor;
+      });
+    }
+
+    doc.save('skrivsmart_dokument.pdf');
+    toast({ title: 'Dokumentet har laddats ner som .pdf' });
+  };
+
+
   const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -245,10 +338,21 @@ export default function Home() {
                       <Upload className="mr-2 h-4 w-4" /> Ladda upp
                     </Label>
                   </Button>
-                  <Input id="upload-file" type="file" className="hidden" onChange={handleUpload} accept=".txt,.docx,.pdf" />
-                  <Button variant="outline" onClick={handleDownload} disabled={!text}>
-                    <Download className="mr-2 h-4 w-4" /> Ladda ner
-                  </Button>
+                  <Input id="upload-file" type="file" className="hidden" onChange={handleUpload} accept=".txt" />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" disabled={!text}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Ladda ner
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={downloadTxt}>Som .txt</DropdownMenuItem>
+                      <DropdownMenuItem onClick={downloadDocx}>Som Word (.docx)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={downloadPdf}>Som PDF (.pdf)</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardTitle>
             </CardHeader>
