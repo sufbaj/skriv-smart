@@ -13,6 +13,7 @@ import {z} from 'genkit';
 
 const RewriteTextInputSchema = z.object({
   text: z.string().describe('The text to be rewritten.'),
+  language: z.string().describe('The language for the rewritten text. Can be "sv", "bs", "hr", or "sr".'),
 });
 export type RewriteTextInput = z.infer<typeof RewriteTextInputSchema>;
 
@@ -29,7 +30,12 @@ const prompt = ai.definePrompt({
   name: 'rewriteTextPrompt',
   input: {schema: RewriteTextInputSchema},
   output: {schema: RewriteTextOutputSchema},
-  prompt: `Please rewrite the following text to improve its clarity and style:\n\n{{{text}}}`,
+  prompt: `Please rewrite the following text to improve its clarity and style, in the specified language.
+
+  The rewritten text must be in the following language: {{{language}}}.
+  
+  Text to rewrite:
+  {{{text}}}`,
 });
 
 const rewriteTextFlow = ai.defineFlow(

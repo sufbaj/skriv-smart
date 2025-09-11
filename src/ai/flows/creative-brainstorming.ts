@@ -16,6 +16,7 @@ const CreativeBrainstormInputSchema = z.object({
   inputText: z
     .string()
     .describe('The user-provided text to generate creative ideas from.'),
+  language: z.string().describe('The language for the suggestions. Can be "sv", "bs", "hr", or "sr".'),
 });
 export type CreativeBrainstormInput = z.infer<typeof CreativeBrainstormInputSchema>;
 
@@ -38,13 +39,15 @@ const creativeBrainstormPrompt = ai.definePrompt({
   output: {schema: CreativeBrainstormOutputSchema},
   prompt: `You are a creative writing assistant for elementary school students. Your goal is to provide fun and engaging ideas to help them overcome writer's block.
 
+  The suggestions must be in the following language: {{{language}}}.
+  
   Based on the following text:
-  {{inputText}}
+  {{{inputText}}}
 
   Generate three distinct and creative writing suggestions, focusing on new ideas, characters, or settings that could inspire the student to continue writing. The suggestions should be different enough to provide a good set of options.
 
   Format each suggestion as a single sentence.
-  `, // Added a newline at the end
+  `,
 });
 
 const creativeBrainstormFlow = ai.defineFlow(

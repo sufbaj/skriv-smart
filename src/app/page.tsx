@@ -31,6 +31,8 @@ import { verifySourceFacts, type VerifySourceFactsOutput } from '@/ai/flows/veri
 import { rewriteText, type RewriteTextOutput } from '@/ai/flows/rewrite-text';
 import { generateTextFromPrompt, type GenerateTextFromPromptOutput } from '@/ai/flows/generate-text-from-prompt';
 import { continueWriting, type ContinueWritingOutput } from '@/ai/flows/continue-writing';
+import { makeLonger, type MakeLongerOutput } from '@/ai/flows/make-longer';
+import { makeShorter, type MakeShorterOutput } from '@/ai/flows/make-shorter';
 
 
 import { useToast } from '@/hooks/use-toast';
@@ -148,8 +150,14 @@ export default function Home() {
     }
     handleAiCall(
       'brainstorm',
-      () => generateCreativeBrainstorm({ inputText: text }),
-      (result) => setBrainstormIdeas(result.suggestions),
+      () => generateCreativeBrainstorm({ inputText: text, language: textLanguage }),
+      (result) => {
+        setBrainstormIdeas(result.suggestions)
+        toast({
+          title: 'Här är några idéer!',
+          description: 'Se resultaten under brainstorming-knappen.',
+        });
+      },
       'Kunde inte generera idéer.'
     );
   };
@@ -216,12 +224,38 @@ export default function Home() {
     if (!text) return;
     handleAiCall(
       'rewrite',
-      () => rewriteText({ text }),
+      () => rewriteText({ text, language: textLanguage }),
       (result) => {
         setText(result.rewrittenText);
         toast({ title: 'Texten har skrivits om!' });
       },
       'Kunde inte skriva om texten.'
+    );
+  };
+
+  const handleMakeLonger = () => {
+    if (!text) return;
+    handleAiCall(
+      'make-longer',
+      () => makeLonger({ text, language: textLanguage }),
+      (result) => {
+        setText(result.longerText);
+        toast({ title: 'Texten har gjorts längre!' });
+      },
+      'Kunde inte göra texten längre.'
+    );
+  };
+
+  const handleMakeShorter = () => {
+    if (!text) return;
+    handleAiCall(
+      'make-shorter',
+      () => makeShorter({ text, language: textLanguage }),
+      (result) => {
+        setText(result.shorterText);
+        toast({ title: 'Texten har gjorts kortare!' });
+      },
+      'Kunde inte göra texten kortare.'
     );
   };
 
@@ -464,12 +498,12 @@ export default function Home() {
               <TabsContent value="tools" className="mt-4 space-y-6">
                 
                 <div className="p-4 border rounded-lg space-y-3">
-                  <h4 className="font-semibold">Idégenerator</h4>
-                  <p className="text-sm text-muted-foreground">Har du idétorka? Skriv en kort idé så hjälper AI:n dig att starta.</p>
+                  <h4 className="font-semibold">Idégenerator och textutveckling</h4>
+                  <p className="text-sm text-muted-foreground">Har du idétorka? Skriv en kort idé så hjälper AI:n dig att starta. Du kan även be AI:n fortsätta skriva på din befintliga text.</p>
                   <Input placeholder="t.ex. En drake som älskar glass" value={ideaPrompt} onChange={e => setIdeaPrompt(e.target.value)} />
                    <div className="space-y-2">
-                    <Label className="text-sm font-medium">Språk för genererad text</Label>
-                    <div className="flex gap-2">
+                    <Label className="text-sm font-medium">Språk för AI-verktyg</Label>
+                    <div className="flex gap-2 flex-wrap">
                       <Button size="sm" variant={textLanguage === 'sv' ? 'default' : 'outline'} onClick={() => setTextLanguage('sv')}>Svenska</Button>
                       <Button size="sm" variant={textLanguage === 'bs' ? 'default' : 'outline'} onClick={() => setTextLanguage('bs')}>Bosanski</Button>
                       <Button size="sm" variant={textLanguage === 'hr' ? 'default' : 'outline'} onClick={() => setTextLanguage('hr')}>Hrvatski</Button>
@@ -492,14 +526,18 @@ export default function Home() {
                    <Button onClick={handleRewrite} disabled={!text || isLoading === 'rewrite'} className="w-full" variant="secondary">
                      {isLoading === 'rewrite' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Skriv om texten
                    </Button>
-                   <Button disabled className="w-full" variant="secondary">Gör längre (snart)</Button>
-                   <Button disabled className="w-full" variant="secondary">Gör kortare (snart)</Button>
+                   <Button onClick={handleMakeLonger} disabled={!text || isLoading === 'make-longer'} className="w-full" variant="secondary">
+                    {isLoading === 'make-longer' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Gör längre
+                   </Button>
+                   <Button onClick={handleMakeShorter} disabled={!text || isLoading === 'make-shorter'} className="w-full" variant="secondary">
+                    {isLoading === 'make-shorter' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Gör kortare
+                   </Button>
                 </div>
                 
                 <div className="p-4 border rounded-lg space-y-3">
                   <h4 className="font-semibold">Kreativ brainstorming</h4>
                   <Button onClick={handleBrainstorm} disabled={!text || isLoading === 'brainstorm'} className="w-full">
-                    {isLoading === 'brainstorm' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Ge mig idéer
+                    {isLoading === 'brainstorm' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />} Ge mig idéer
                   </Button>
                   {brainstormIdeas && (
                      <ul className="mt-2 space-y-2 text-sm list-disc list-inside p-2 animate-in fade-in-50">
