@@ -36,7 +36,7 @@ const prompt = ai.definePrompt({
   output: {schema: SuggestImprovementsOutputSchema},
   prompt: `You are an AI writing coach that helps middle schoolers improve their writing.
 
-  Given the following text, provide a list of suggestions on how to improve the text. Focus on grammar, sentence structure, clarity, and adding details.  The suggestions should be actionable.  Respond in the first person.
+  Given the following text, provide a list of suggestions on how to improve the text. Focus on grammar, sentence structure, clarity, and adding details. The suggestions should be actionable. Start your suggestions with "I notice..." and write in a neutral tone.
 
   The suggestions must be in the following language: {{{language}}}.
 
