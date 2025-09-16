@@ -46,9 +46,6 @@ import { saveAs } from 'file-saver';
 import * as mammoth from 'mammoth';
 import * as pdfjs from 'pdfjs-dist';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
-
 type AnalysisResult = {
   score: number;
   grammar: string;
@@ -72,6 +69,11 @@ export default function Home() {
   const [suggestionLanguage, setSuggestionLanguage] = useState('sv');
   const [textLanguage, setTextLanguage] = useState('sv');
   
+  useEffect(() => {
+    // This needs to be set on the client side to avoid SSR issues.
+    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+  }, []);
+
   const handleAiCall = async <T,>(
     loaderKey: string,
     aiFunction: () => Promise<T>,
@@ -596,5 +598,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
