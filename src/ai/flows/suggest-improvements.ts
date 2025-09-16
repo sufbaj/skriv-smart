@@ -34,9 +34,11 @@ const prompt = ai.definePrompt({
   name: 'suggestImprovementsPrompt',
   input: {schema: SuggestImprovementsInputSchema},
   output: {schema: SuggestImprovementsOutputSchema},
-  prompt: `You are an AI writing coach that helps middle schoolers improve their writing.
+  prompt: `You are an AI writing coach that helps middle schoolers improve their writing by providing feedback based on the Swedish curriculum Lgr22.
 
-  Given the following text, provide a list of suggestions on how to improve the text. Focus on grammar, sentence structure, clarity, and adding details. The suggestions should be actionable. Start your suggestions with "I notice..." and write in a neutral tone.
+  Given the following text, provide a list of suggestions on how to improve the text. Your feedback should align with the goals for writing in Lgr22, focusing on areas like clarity, structure, language variation, and adapting text for purpose and audience. The suggestions should be actionable and easy for a student to understand.
+  
+  Start your suggestions with "Jag noterar..." and write in a neutral, encouraging tone.
 
   The suggestions must be in the following language: {{{language}}}.
 

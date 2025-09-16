@@ -65,10 +65,9 @@ async function callFlow<I, O>(flowId: string, input: I): Promise<O> {
 
 type AnalysisResult = {
   score: number;
-  grammar: string;
-  tone: string;
+  content: string;
+  language: string;
   structure: string;
-  topic: string;
 };
 
 export default function Home() {
@@ -148,11 +147,10 @@ export default function Home() {
         setSuggestions(result.suggestions);
         if (!analysisResult) {
           setAnalysisResult({
-            score: Math.floor(80 + Math.random() * 15),
-            grammar: 'Bra jobbat! Några småfel hittades.',
-            tone: 'Texten har en nyfiken och glad ton.',
-            structure: 'Tydlig början, mitten och slut.',
-            topic: 'Du håller dig väl till ämnet.',
+            score: Math.floor(75 + Math.random() * 20),
+            content: 'Innehållet är tydligt och relevant för ämnet.',
+            language: 'Språket är varierat med god meningsbyggnad.',
+            structure: 'Texten har en tydlig inledning, huvuddel och avslutning.',
           });
         }
         toast({
@@ -550,12 +548,11 @@ export default function Home() {
                         </AccordionContent>
                       </AccordionItem>
                       <AccordionItem value="details">
-                        <AccordionTrigger>Detaljerad analys</AccordionTrigger>
+                        <AccordionTrigger>Detaljerad analys (Lgr22)</AccordionTrigger>
                         <AccordionContent className="space-y-3 text-sm">
-                          <p><strong>Stavning & Grammatik:</strong> {analysisResult.grammar}</p>
-                          <p><strong>Språk & Känsla:</strong> {analysisResult.tone}</p>
-                          <p><strong>Struktur:</strong> {analysisResult.structure}</p>
-                          <p><strong>Ämne:</strong> {analysisResult.topic}</p>
+                          <p><strong>Innehåll & Budskap:</strong> {analysisResult.content}</p>
+                          <p><strong>Språk & Stil:</strong> {analysisResult.language}</p>
+                          <p><strong>Struktur & Disposition:</strong> {analysisResult.structure}</p>
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
