@@ -25,14 +25,14 @@ import {
   ChevronDown,
   PenSquare,
 } from 'lucide-react';
-import { suggestImprovements, type SuggestImprovementsOutput } from '@/ai/flows/suggest-improvements';
-import { generateCreativeBrainstorm, type CreativeBrainstormOutput } from '@/ai/flows/creative-brainstorming';
-import { verifySourceFacts, type VerifySourceFactsOutput } from '@/ai/flows/verify-source-facts';
-import { rewriteText, type RewriteTextOutput } from '@/ai/flows/rewrite-text';
-import { generateTextFromPrompt, type GenerateTextFromPromptOutput } from '@/ai/flows/generate-text-from-prompt';
-import { continueWriting, type ContinueWritingOutput } from '@/ai/flows/continue-writing';
-import { makeLonger, type MakeLongerOutput } from '@/ai/flows/make-longer';
-import { makeShorter, type MakeShorterOutput } from '@/ai/flows/make-shorter';
+import type { SuggestImprovementsInput, SuggestImprovementsOutput } from '@/ai/flows/suggest-improvements';
+import type { CreativeBrainstormInput, CreativeBrainstormOutput } from '@/ai/flows/creative-brainstorming';
+import type { VerifySourceFactsInput, VerifySourceFactsOutput } from '@/ai/flows/verify-source-facts';
+import type { RewriteTextInput, RewriteTextOutput } from '@/ai/flows/rewrite-text';
+import type { GenerateTextFromPromptInput, GenerateTextFromPromptOutput } from '@/ai/flows/generate-text-from-prompt';
+import type { ContinueWritingInput, ContinueWritingOutput } from '@/ai/flows/continue-writing';
+import type { MakeLongerInput, MakeLongerOutput } from '@/ai/flows/make-longer';
+import type { MakeShorterInput, MakeShorterOutput } from '@/ai/flows/make-shorter';
 
 
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +45,23 @@ import jsPDF from 'jspdf';
 import { saveAs } from 'file-saver';
 import * as mammoth from 'mammoth';
 import * as pdfjs from 'pdfjs-dist';
+
+async function callFlow<I, O>(flowId: string, input: I): Promise<O> {
+  const response = await fetch(`/api/genkit/${flowId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Flow ${flowId} failed: ${errorText}`);
+  }
+
+  return response.json() as Promise<O>;
+}
 
 type AnalysisResult = {
   score: number;
@@ -74,12 +91,19 @@ export default function Home() {
     pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
   }, []);
 
-  const handleAiCall = async <T,>(
-    loaderKey: string,
-    aiFunction: () => Promise<T>,
-    onSuccess: (result: T) => void,
-    errorMessage: string
-  ) => {
+  const handleAiCall = async <I, O>({
+    loaderKey,
+    flowId,
+    input,
+    onSuccess,
+    errorMessage,
+  }: {
+    loaderKey: string;
+    flowId: string;
+    input: I;
+    onSuccess: (result: O) => void;
+    errorMessage: string;
+  }) => {
     setIsLoading(loaderKey);
     if (loaderKey !== 'analyze') {
       setAnalysisResult(null);
@@ -92,7 +116,7 @@ export default function Home() {
     }
 
     try {
-      const result = await aiFunction();
+      const result = await callFlow<I, O>(flowId, input);
       onSuccess(result);
     } catch (error) {
       console.error(error);
@@ -116,10 +140,11 @@ export default function Home() {
       return;
     }
 
-    await handleAiCall(
-      'analyze',
-      () => suggestImprovements({ text, language: lang }),
-      (result) => {
+    await handleAiCall<SuggestImprovementsInput, SuggestImprovementsOutput>({
+      loaderKey: 'analyze',
+      flowId: 'suggestImprovementsFlow',
+      input: { text, language: lang },
+      onSuccess: (result) => {
         setSuggestions(result.suggestions);
         if (!analysisResult) {
           setAnalysisResult({
@@ -135,8 +160,8 @@ export default function Home() {
           description: 'Se resultaten i panelen till höger.',
         });
       },
-      'Kunde inte hämta förslag.'
-    );
+      errorMessage: 'Kunde inte hämta förslag.',
+    });
   };
   
   useEffect(() => {
@@ -154,18 +179,19 @@ export default function Home() {
       });
       return;
     }
-    handleAiCall(
-      'brainstorm',
-      () => generateCreativeBrainstorm({ inputText: text, language: textLanguage }),
-      (result) => {
+    handleAiCall<CreativeBrainstormInput, CreativeBrainstormOutput>({
+      loaderKey: 'brainstorm',
+      flowId: 'creativeBrainstormFlow',
+      input: { inputText: text, language: textLanguage },
+      onSuccess: (result) => {
         setBrainstormIdeas(result.suggestions)
         toast({
           title: 'Här är några idéer!',
           description: 'Se resultaten under brainstorming-knappen.',
         });
       },
-      'Kunde inte generera idéer.'
-    );
+      errorMessage: 'Kunde inte generera idéer.',
+    });
   };
   
   const handleFactCheck = () => {
@@ -177,12 +203,13 @@ export default function Home() {
       });
       return;
     }
-    handleAiCall(
-      'fact-check',
-      () => verifySourceFacts({ text, sourceUrl: factCheckUrl }),
-      (result) => setFactCheckResult(result),
-      'Kunde inte verifiera fakta.'
-    );
+    handleAiCall<VerifySourceFactsInput, VerifySourceFactsOutput>({
+      loaderKey: 'fact-check',
+      flowId: 'verifySourceFactsFlow',
+      input: { text, sourceUrl: factCheckUrl },
+      onSuccess: (result) => setFactCheckResult(result),
+      errorMessage: 'Kunde inte verifiera fakta.',
+    });
   };
   
   const handleGenerateIntro = () => {
@@ -194,16 +221,17 @@ export default function Home() {
       });
       return;
     }
-    handleAiCall(
-      'intro',
-      () => generateTextFromPrompt({ prompt: ideaPrompt, language: textLanguage }),
-      (result) => {
+    handleAiCall<GenerateTextFromPromptInput, GenerateTextFromPromptOutput>({
+      loaderKey: 'intro',
+      flowId: 'generateTextFromPromptFlow',
+      input: { prompt: ideaPrompt, language: textLanguage },
+      onSuccess: (result) => {
         setGeneratedIntro(result);
         setText(prev => `${result.generatedText}\n\n${prev}`);
         toast({ title: 'Inledning skapad och infogad!' });
       },
-      'Kunde inte generera inledning.'
-    );
+      errorMessage: 'Kunde inte generera inledning.',
+    });
   };
 
   const handleContinueWriting = () => {
@@ -215,54 +243,58 @@ export default function Home() {
       });
       return;
     }
-    handleAiCall(
-      'continue',
-      () => continueWriting({ text, language: textLanguage }),
-      (result) => {
+    handleAiCall<ContinueWritingInput, ContinueWritingOutput>({
+      loaderKey: 'continue',
+      flowId: 'continueWritingFlow',
+      input: { text, language: textLanguage },
+      onSuccess: (result) => {
         setText(prev => `${prev}\n\n${result.continuation}`);
         toast({ title: 'Berättelsen har fortsatt!' });
       },
-      'Kunde inte fortsätta skriva.'
-    );
+      errorMessage: 'Kunde inte fortsätta skriva.',
+    });
   };
   
   const handleRewrite = () => {
     if (!text) return;
-    handleAiCall(
-      'rewrite',
-      () => rewriteText({ text, language: textLanguage }),
-      (result) => {
+    handleAiCall<RewriteTextInput, RewriteTextOutput>({
+      loaderKey: 'rewrite',
+      flowId: 'rewriteTextFlow',
+      input: { text, language: textLanguage },
+      onSuccess: (result) => {
         setText(result.rewrittenText);
         toast({ title: 'Texten har skrivits om!' });
       },
-      'Kunde inte skriva om texten.'
-    );
+      errorMessage: 'Kunde inte skriva om texten.',
+    });
   };
 
   const handleMakeLonger = () => {
     if (!text) return;
-    handleAiCall(
-      'make-longer',
-      () => makeLonger({ text, language: textLanguage }),
-      (result) => {
+    handleAiCall<MakeLongerInput, MakeLongerOutput>({
+      loaderKey: 'make-longer',
+      flowId: 'makeLongerFlow',
+      input: { text, language: textLanguage },
+      onSuccess: (result) => {
         setText(result.longerText);
         toast({ title: 'Texten har gjorts längre!' });
       },
-      'Kunde inte göra texten längre.'
-    );
+      errorMessage: 'Kunde inte göra texten längre.',
+    });
   };
 
   const handleMakeShorter = () => {
     if (!text) return;
-    handleAiCall(
-      'make-shorter',
-      () => makeShorter({ text, language: textLanguage }),
-      (result) => {
+    handleAiCall<MakeShorterInput, MakeShorterOutput>({
+      loaderKey: 'make-shorter',
+      flowId: 'makeShorterFlow',
+      input: { text, language: textLanguage },
+      onSuccess: (result) => {
         setText(result.shorterText);
         toast({ title: 'Texten har gjorts kortare!' });
       },
-      'Kunde inte göra texten kortare.'
-    );
+      errorMessage: 'Kunde inte göra texten kortare.',
+    });
   };
 
   const downloadTxt = () => {
