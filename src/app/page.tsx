@@ -44,7 +44,9 @@ import { Document, Packer, Paragraph, TextRun } from 'docx';
 import jsPDF from 'jspdf';
 import { saveAs } from 'file-saver';
 import * as mammoth from 'mammoth';
-import * as pdfjs from 'pdfjs-dist';
+
+// Dynamically import pdfjs-dist on the client side
+let pdfjs: typeof import('pdfjs-dist');
 
 async function callFlow<I, O>(flowId: string, input: I): Promise<O> {
   const response = await fetch(`/api/genkit/${flowId}`, {
@@ -87,7 +89,10 @@ export default function Home() {
   
   useEffect(() => {
     // This needs to be set on the client side to avoid SSR issues.
-    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+    import('pdfjs-dist/build/pdf.mjs').then(pdfjsModule => {
+      pdfjs = pdfjsModule;
+      pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+    });
   }, []);
 
   const handleAiCall = async <I, O>({
@@ -405,6 +410,14 @@ export default function Home() {
           const result = await mammoth.extractRawText({ arrayBuffer });
           extractedText = result.value;
         } else if (file.type === 'application/pdf') {
+          if (!pdfjs) {
+            toast({
+              variant: 'destructive',
+              title: 'PDF-läsare inte redo',
+              description: 'Vänta ett ögonblick och försök igen.',
+            });
+            return;
+          }
           const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
           let pdfText = '';
           for (let i = 1; i <= pdf.numPages; i++) {
