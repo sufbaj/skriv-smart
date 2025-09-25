@@ -401,8 +401,8 @@ export default function Home() {
           extractedText = result.value;
         } else if (file.type === 'application/pdf') {
           const pdfjs = await import('pdfjs-dist/build/pdf.mjs');
-          await import('pdfjs-dist/build/pdf.worker.mjs');
-          pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+          const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.mjs');
+          pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
 
           const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
           let pdfText = '';
