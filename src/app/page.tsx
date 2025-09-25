@@ -400,9 +400,8 @@ export default function Home() {
           const result = await mammoth.extractRawText({ arrayBuffer });
           extractedText = result.value;
         } else if (file.type === 'application/pdf') {
-          const pdfjs = await import('pdfjs-dist/build/pdf.mjs');
-          const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.mjs');
-          pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
+          const pdfjs = await import('pdfjs-dist');
+          pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
           const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
           let pdfText = '';
