@@ -1,11 +1,22 @@
-import {genkitNext} from '@genkit-ai/next';
-import '@/ai/flows/generate-text-from-prompt';
-import '@/ai/flows/suggest-improvements';
-import '@/ai/flows/verify-source-facts';
-import '@/ai/flows/creative-brainstorming';
-import '@/ai/flows/rewrite-text';
-import '@/ai/flows/continue-writing';
-import '@/ai/flows/make-longer';
-import '@/ai/flows/make-shorter';
+import { genkitHandler } from '@genkit-ai/next';
+import { generateTextFromPromptFlow } from '@/ai/flows/generate-text-from-prompt';
+import { suggestImprovementsFlow } from '@/ai/flows/suggest-improvements';
+import { verifySourceFactsFlow } from '@/ai/flows/verify-source-facts';
+import { creativeBrainstormFlow } from '@/ai/flows/creative-brainstorming';
+import { rewriteTextFlow } from '@/ai/flows/rewrite-text';
+import { continueWritingFlow } from '@/ai/flows/continue-writing';
+import { makeLongerFlow } from '@/ai/flows/make-longer';
+import { makeShorterFlow } from '@/ai/flows/make-shorter';
 
-export const {POST} = genkitNext();
+export const { GET, POST } = genkitHandler({
+  flows: [
+    generateTextFromPromptFlow,
+    suggestImprovementsFlow,
+    verifySourceFactsFlow,
+    creativeBrainstormFlow,
+    rewriteTextFlow,
+    continueWritingFlow,
+    makeLongerFlow,
+    makeShorterFlow,
+  ],
+});

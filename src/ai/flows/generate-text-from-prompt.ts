@@ -36,7 +36,7 @@ const prompt = ai.definePrompt({
   The generated text must be in the following language: {{{language}}}.`,
 });
 
-const generateTextFromPromptFlow = ai.defineFlow(
+export const generateTextFromPromptFlow = ai.defineFlow(
   {
     name: 'generateTextFromPromptFlow',
     inputSchema: GenerateTextFromPromptInputSchema,

@@ -36,7 +36,7 @@ Text: {{{text}}}
 Source URL: {{{sourceUrl}}}`,
 });
 
-const verifySourceFactsFlow = ai.defineFlow(
+export const verifySourceFactsFlow = ai.defineFlow(
   {
     name: 'verifySourceFactsFlow',
     inputSchema: VerifySourceFactsInputSchema,

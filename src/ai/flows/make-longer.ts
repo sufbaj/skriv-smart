@@ -38,7 +38,7 @@ const prompt = ai.definePrompt({
   {{{text}}}`,
 });
 
-const makeLongerFlow = ai.defineFlow(
+export const makeLongerFlow = ai.defineFlow(
   {
     name: 'makeLongerFlow',
     inputSchema: MakeLongerInputSchema,

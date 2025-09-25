@@ -48,7 +48,7 @@ const continueWritingPrompt = ai.definePrompt({
   `,
 });
 
-const continueWritingFlow = ai.defineFlow(
+export const continueWritingFlow = ai.defineFlow(
   {
     name: 'continueWritingFlow',
     inputSchema: ContinueWritingInputSchema,

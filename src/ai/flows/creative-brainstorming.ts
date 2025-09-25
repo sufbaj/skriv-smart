@@ -50,7 +50,7 @@ const creativeBrainstormPrompt = ai.definePrompt({
   `,
 });
 
-const creativeBrainstormFlow = ai.defineFlow(
+export const creativeBrainstormFlow = ai.defineFlow(
   {
     name: 'creativeBrainstormFlow',
     inputSchema: CreativeBrainstormInputSchema,

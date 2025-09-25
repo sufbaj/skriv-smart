@@ -46,7 +46,7 @@ const prompt = ai.definePrompt({
   `,
 });
 
-const suggestImprovementsFlow = ai.defineFlow(
+export const suggestImprovementsFlow = ai.defineFlow(
   {
     name: 'suggestImprovementsFlow',
     inputSchema: SuggestImprovementsInputSchema,

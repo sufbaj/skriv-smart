@@ -38,7 +38,7 @@ const prompt = ai.definePrompt({
   {{{text}}}`,
 });
 
-const rewriteTextFlow = ai.defineFlow(
+export const rewriteTextFlow = ai.defineFlow(
   {
     name: 'rewriteTextFlow',
     inputSchema: RewriteTextInputSchema,
